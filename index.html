@@ -146,45 +146,46 @@
     <div class="card">
         <h1>Minecraft Legacy for Windows (compiled)</h1>
 
-        <!-- dynamic url container -->
+        <!-- dynamic url container (starts empty) -->
         <div class="url-highlight" id="url-container">
-            🔗 <a href="#" id="dynamic-link" target="_blank" rel="noopener noreferrer">enlaza.site/ID4L0C</a>
+            🔗 <a href="#" id="dynamic-link" target="_blank" rel="noopener noreferrer">⚠️ loading...</a>
         </div>
 
-        <!-- dynamic password container -->
+        <!-- dynamic password container (starts empty) -->
         <div class="password-box" id="password-container">
             <span class="password-label">🔑 PASSWORD</span>
-            <span class="password-value" id="dynamic-password">ZnVja3lvdW1pY3Jvc2xvcA0K</span>
+            <span class="password-value" id="dynamic-password">⚠️ loading...</span>
         </div>
 
-        <!-- dynamic build date + dynamic file size (read from url.txt) -->
+        <!-- dynamic build date + dynamic file size (both start empty) -->
         <div class="secondary-info">
             <span class="file-badge">📦 Minecraft Legacy.7z</span>
             <!-- size will be updated from SIZE: field -->
-            <span class="file-badge" id="file-size-badge">🧾 689.91 MB</span>
-            <span class="compile-date" id="build-date-container">📅 compiled: <span id="build-date-value">02-03-2026 18:28:39</span></span>
+            <span class="file-badge" id="file-size-badge">🧾 ⏳ loading...</span>
+            <span class="compile-date" id="build-date-container">📅 compiled: <span id="build-date-value">⏳ loading...</span></span>
         </div>
     </div>
 
     <script>
         (function() {
             // ----- helper: fetch with no-cache -----
-            async function fetchTextFile(url, defaultValue, parser = (text) => text.trim()) {
+            async function fetchTextFile(url, defaultValue = null) {
                 try {
                     const response = await fetch(url, { cache: "no-store" });
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     const raw = await response.text();
-                    return parser(raw);
+                    return raw.trim() || defaultValue;
                 } catch (e) {
                     console.warn(`failed to fetch ${url}:`, e);
-                    return defaultValue;
+                    return defaultValue;  // returns null if fetch fails
                 }
             }
 
             // ----- parse url.txt with SIZE field -----
             // format: "URL: ... PSSWORD: ... SIZE: ..." (any order, case-insensitive)
             function parseUrlPasswordSize(text) {
-                // defaults
+                if (!text) return { url: null, pwd: null, size: null };
+
                 let url = null;
                 let pwd = null;
                 let size = null;
@@ -204,13 +205,11 @@
             // ----- update UI -----
             async function refreshFromRepo() {
                 // 1. fetch url.txt (contains URL + PSSWORD + SIZE)
-                const urlTxtDefault = "URL: enlaza.site/ID4L0C PSSWORD: ZnVja3lvdW1pY3Jvc2xvcA0K SIZE: 689.91 MB";
-                const urlTxtRaw = await fetchTextFile('url.txt', urlTxtDefault);
+                const urlTxtRaw = await fetchTextFile('url.txt');
                 const { url, pwd, size } = parseUrlPasswordSize(urlTxtRaw);
 
                 // 2. fetch build_date.txt (format DD-MM-AAAA HH:MM:SS)
-                const defaultDate = "02-03-2026 18:28:39";
-                const buildDate = await fetchTextFile('build_date.txt', defaultDate, (t) => t.trim());
+                const buildDate = await fetchTextFile('build_date.txt');
 
                 // 3. update DOM elements
                 // URL link
@@ -225,26 +224,26 @@
                         linkEl.textContent = url;
                     } else {
                         linkEl.href = '#';
-                        linkEl.textContent = '⚠️ no url';
+                        linkEl.textContent = '❌ no url in url.txt';
                     }
                 }
 
                 // password
                 const pwdEl = document.getElementById('dynamic-password');
                 if (pwdEl) {
-                    pwdEl.textContent = pwd || '⚠️ no password';
+                    pwdEl.textContent = pwd || '❌ no password in url.txt';
                 }
 
                 // file size badge
                 const sizeEl = document.getElementById('file-size-badge');
                 if (sizeEl) {
-                    sizeEl.innerHTML = size ? `🧾 ${size}` : `🧾 689.91 MB`;
+                    sizeEl.innerHTML = size ? `🧾 ${size}` : `🧾 ❌ no size in url.txt`;
                 }
 
                 // build date
                 const dateEl = document.getElementById('build-date-value');
                 if (dateEl) {
-                    dateEl.textContent = buildDate || '02-03-2026 18:28:39';
+                    dateEl.textContent = buildDate || '❌ no build_date.txt';
                 }
             }
 
